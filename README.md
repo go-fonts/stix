@@ -16,7 +16,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/go-fonts/stix/stix2math"
+	"github.com/go-fonts/stix/stix2mathregular"
 	"golang.org/x/image/font/sfnt"
 )
 
