@@ -8,18 +8,26 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/go-fonts/stix/stix2math"
+	"github.com/go-fonts/stix/stix2mathregular"
 	"golang.org/x/image/font/sfnt"
 )
 
 func Example() {
-	ttf, err := sfnt.Parse(stix2math.TTF)
+	ttf, err := sfnt.Parse(stix2mathregular.TTF)
 	if err != nil {
 		log.Fatalf("could not parse STIX2 Math font: %+v", err)
 	}
 
+	var buf sfnt.Buffer
+	v, err := ttf.Name(&buf, sfnt.NameIDVersion)
+	if err != nil {
+		log.Fatalf("could not retrieve font version: %+v", err)
+	}
+
+	fmt.Printf("version:    %s\n", v)
 	fmt.Printf("num glyphs: %d\n", ttf.NumGlyphs())
 
 	// Output:
-	// num glyphs: 5543
+	// version:    Version 2.13 b171
+	// num glyphs: 6760
 }

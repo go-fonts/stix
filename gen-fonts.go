@@ -6,6 +6,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build ignore
 // +build ignore
 
 package main
@@ -16,7 +17,6 @@ import (
 	"fmt"
 	"go/format"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -29,17 +29,25 @@ func main() {
 	log.SetFlags(0)
 
 	var (
-		tmpl = flag.String("src", "https://github.com/stipub/stixfonts/raw/master/OTF", "remote directory holding OTF files for STIX fonts")
+		tmpl = flag.String(
+			"src",
+			"https://github.com/stipub/stixfonts/raw/v2.13b171/fonts/static_otf",
+			"remote directory holding OTF files for STIX fonts",
+		)
 	)
 
 	flag.Parse()
 
 	for _, fname := range []string{
-		"STIX2Math.otf",
-		"STIX2Text-Bold.otf",
-		"STIX2Text-BoldItalic.otf",
-		"STIX2Text-Italic.otf",
-		"STIX2Text-Regular.otf",
+		"STIXTwoMath-Regular.otf",
+		"STIXTwoText-Bold.otf",
+		"STIXTwoText-BoldItalic.otf",
+		"STIXTwoText-Italic.otf",
+		"STIXTwoText-Medium.otf",
+		"STIXTwoText-MediumItalic.otf",
+		"STIXTwoText-Regular.otf",
+		"STIXTwoText-SemiBold.otf",
+		"STIXTwoText-SemiBoldItalic.otf",
 	} {
 		err := gen(*tmpl, fname)
 		if err != nil {
@@ -85,24 +93,24 @@ func do(ttfName string, src []byte) error {
 	fmt.Fprintf(b, "// Package %s provides the %q TrueType font\n", pkgName, fontName)
 	fmt.Fprintf(b, "// from the STIX2 font family. It is %s font.\n", desc)
 	fmt.Fprintf(b, "package %[1]s // import \"github.com/go-fonts/stix/%[1]s\"\n\n", pkgName)
+	fmt.Fprintf(b, "import _ \"embed\"\n")
 	fmt.Fprintf(b, "// TTF is the data for the %q TrueType font.\n", fontName)
-	fmt.Fprintf(b, "var TTF = []byte{")
-	for i, x := range src {
-		if i&15 == 0 {
-			b.WriteByte('\n')
-		}
-		fmt.Fprintf(b, "%#02x,", x)
-	}
-	fmt.Fprintf(b, "\n}\n")
+	fmt.Fprintf(b, "//\n//go:embed %s\n", ttfName)
+	fmt.Fprintf(b, "var TTF  []byte\n")
 
 	dst, err := format.Source(b.Bytes())
 	if err != nil {
 		return fmt.Errorf("could not format source: %w", err)
 	}
 
-	err = ioutil.WriteFile(filepath.Join(pkgName, "data.go"), dst, 0666)
+	err = os.WriteFile(filepath.Join(pkgName, "data.go"), dst, 0666)
 	if err != nil {
 		return fmt.Errorf("could not write package source file: %w", err)
+	}
+
+	err = os.WriteFile(filepath.Join(pkgName, ttfName), src, 0666)
+	if err != nil {
+		return fmt.Errorf("could not write package TTF file: %w", err)
 	}
 
 	return nil
@@ -121,6 +129,7 @@ func fontName(ttfName string) string {
 func pkgName(ttfName string) string {
 	s := ttfName[:len(ttfName)-len(suffix)]
 	s = strings.Replace(s, "-", "", -1)
+	s = strings.Replace(s, "STIXTwo", "STIX2", 1)
 	s = strings.ToLower(s)
 	return s
 }
