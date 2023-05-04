@@ -4,3 +4,5 @@
 
 // Package stix holds TTF data of the STIX2 fonts.
 package stix
+
+//go:generate go run ./gen-fonts.go

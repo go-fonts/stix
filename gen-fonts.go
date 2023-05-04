@@ -6,6 +6,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build ignore
 // +build ignore
 
 package main
@@ -16,7 +17,6 @@ import (
 	"fmt"
 	"go/format"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -29,7 +29,11 @@ func main() {
 	log.SetFlags(0)
 
 	var (
-		tmpl = flag.String("src", "https://github.com/stipub/stixfonts/raw/master/OTF", "remote directory holding OTF files for STIX fonts")
+		tmpl = flag.String(
+			"src",
+			"https://github.com/stipub/stixfonts/raw/v2.13b171/fonts/static_otf",
+			"remote directory holding OTF files for STIX fonts",
+		)
 	)
 
 	flag.Parse()
@@ -85,24 +89,24 @@ func do(ttfName string, src []byte) error {
 	fmt.Fprintf(b, "// Package %s provides the %q TrueType font\n", pkgName, fontName)
 	fmt.Fprintf(b, "// from the STIX2 font family. It is %s font.\n", desc)
 	fmt.Fprintf(b, "package %[1]s // import \"github.com/go-fonts/stix/%[1]s\"\n\n", pkgName)
+	fmt.Fprintf(b, "import _ \"embed\"\n")
 	fmt.Fprintf(b, "// TTF is the data for the %q TrueType font.\n", fontName)
-	fmt.Fprintf(b, "var TTF = []byte{")
-	for i, x := range src {
-		if i&15 == 0 {
-			b.WriteByte('\n')
-		}
-		fmt.Fprintf(b, "%#02x,", x)
-	}
-	fmt.Fprintf(b, "\n}\n")
+	fmt.Fprintf(b, "//\n//go:embed %s\n", ttfName)
+	fmt.Fprintf(b, "var TTF  []byte\n")
 
 	dst, err := format.Source(b.Bytes())
 	if err != nil {
 		return fmt.Errorf("could not format source: %w", err)
 	}
 
-	err = ioutil.WriteFile(filepath.Join(pkgName, "data.go"), dst, 0666)
+	err = os.WriteFile(filepath.Join(pkgName, "data.go"), dst, 0666)
 	if err != nil {
 		return fmt.Errorf("could not write package source file: %w", err)
+	}
+
+	err = os.WriteFile(filepath.Join(pkgName, ttfName), src, 0666)
+	if err != nil {
+		return fmt.Errorf("could not write package TTF file: %w", err)
 	}
 
 	return nil
